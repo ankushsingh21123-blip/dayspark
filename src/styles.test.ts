@@ -20,6 +20,13 @@ test('Daily Moment controls stay tappable, contained, and still under reduced mo
   expect(reduced.text).toMatch(/animation-duration:\s*\.01ms\s*!important;/);
 });
 
+test('Today keeps the optional photo prompt compact and secondary', () => {
+  expect(styles).toMatch(/\.moment-prompt[^\{]*\{[^}]*grid-template-columns:\s*42px\s+minmax\(0,\s*1fr\)\s+auto\s+auto;/);
+  expect(styles).toMatch(/\.moment-prompt[^\{]*\{[^}]*padding:\s*10px\s+12px;/);
+  expect(styles).toMatch(/\.moment-seed[^\{]*\{[^}]*transform:/);
+  expect(styles).toMatch(/\.moment-camera-caption[^\{]*\{[^}]*display:\s*grid;/);
+});
+
 test('context ambience and workout-place cards keep one responsive visual layer', () => {
   expect(styles).toMatch(/:root\[data-dayphase="night"\]/);
   expect(styles).toMatch(/:root\[data-weather="rain"\]/);
@@ -27,6 +34,26 @@ test('context ambience and workout-place cards keep one responsive visual layer'
   expect(styles).toMatch(/\.gym-arrival[^{]*\{[^}]*position:\s*fixed;/);
   expect(styles).toMatch(/\.gym-places[^{]*\{[^}]*border-radius:/);
   expect(styles).toMatch(/\.gym-place-form[^{]*\{[^}]*grid-template-columns:/);
+});
+
+test('the complete interface shares time-aware 3D materials and restrained weather motion', () => {
+  for (const phase of ['dawn', 'day', 'dusk', 'night']) expect(styles).toContain(`:root[data-dayphase="${phase}"]`);
+  for (const token of ['--phase-surface', '--phase-edge', '--phase-shadow', '--phase-spark']) expect(styles).toContain(token);
+  expect(styles).toMatch(/\.ambient-garden[^{]*\{[^}]*perspective:/);
+  expect(styles).toMatch(/\.ambient-orb[^{]*\{[^}]*transform-style:\s*preserve-3d;/);
+  expect(styles).toMatch(/:root\[data-weather="rain"\][^{]*\.weather-rain/);
+  expect(styles).toMatch(/:root\[data-weather="cloud"\][^{]*\.weather-cloud/);
+  expect(styles).toMatch(/:root\[data-weather="snow"\][^{]*\.weather-snow/);
+  expect(styles).toMatch(/\.app-shell\[data-section="gym"\]/);
+  expect(styles).toMatch(/\.app-shell\[data-section="goals"\]/);
+  expect(styles).toMatch(/\.page-stage[^{]*\{[^}]*animation:/);
+  expect(styles).toMatch(/\.nav-item\.active[^{]*\{[^}]*transform:/);
+  expect(styles).toMatch(/\.bottom-nav[^{]*\{[^}]*position:\s*fixed;/);
+  expect(styles).not.toMatch(/\.app-main,\s*\.brand-rail,\s*\.bottom-nav/);
+  expect(styles).toMatch(/\.task-card[^{]*\{[^}]*var\(--phase-surface\)/);
+  expect(styles).toMatch(/\.sheet[^{]*\{[^}]*var\(--phase-surface\)/);
+  const reduced = extractBlock(styles, '@media (prefers-reduced-motion: reduce)');
+  expect(reduced.text).toContain('.ambient-garden');
 });
 
 function extractBlock(css: string, marker: string) {

@@ -89,15 +89,27 @@ test('evening lantern appears after six and saves the day close', async () => {
 
 test('allows a voluntary Daily photo before its reminder time', () => {
   renderToday([], { dailyMoment: moment({ eligiblePrompt: false }) });
-  expect(screen.getByRole('heading', { name: 'Save a piece of today' })).toBeVisible();
-  expect(screen.getByRole('button', { name: 'Open camera' })).toBeVisible();
+  expect(screen.getByText('Daily photo')).toBeVisible();
+  expect(screen.getByText('Capture today')).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Capture daily photo' })).toBeVisible();
+  expect(screen.queryByLabelText('Caption (optional)')).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Not today' })).not.toBeInTheDocument();
 });
 
 test('shows the gentle reminder only when the server marks it eligible', () => {
   renderToday([], { dailyMoment: moment({ eligiblePrompt: true }) });
-  expect(screen.getByRole('heading', { name: 'A tiny piece of today?' })).toBeVisible();
+  expect(screen.getByText('A tiny piece of today?')).toBeVisible();
   expect(screen.queryByText(/points|streak|penalty/i)).not.toBeInTheDocument();
+});
+
+test('keeps the Today Seed ahead of the optional Daily photo', () => {
+  const { container } = renderToday([], { checkin: checkin({ intention: 'Finish the release' }), dailyMoment: moment() });
+  const seed = container.querySelector('.saved-seed');
+  const photo = container.querySelector('.moment-prompt');
+
+  expect(seed).toBeTruthy();
+  expect(photo).toBeTruthy();
+  expect(seed!.compareDocumentPosition(photo!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
 test('notifies once at the scheduled time even when Daily photos already exist', () => {
@@ -127,19 +139,20 @@ test('skips only the server-provided local date and collapses the prompt', async
   const { handlers } = renderToday([], { dailyMoment: moment({ eligiblePrompt: true }) });
   await userEvent.click(screen.getByRole('button', { name: 'Not today' }));
   expect(handlers.onMomentSkip).toHaveBeenCalledWith('2026-08-11');
-  expect(screen.queryByRole('heading', { name: 'A tiny piece of today?' })).not.toBeInTheDocument();
+  expect(screen.queryByText('A tiny piece of today?')).not.toBeInTheDocument();
+  expect(screen.getByText('Capture today')).toBeVisible();
 });
 
 test('captures by live camera and preserves the exact caption', async () => {
   installCameraMock();
   const { handlers } = renderToday([], { dailyMoment: moment({ eligiblePrompt: true }) });
+  await userEvent.click(screen.getByRole('button', { name: 'Capture daily photo' }));
   await userEvent.type(screen.getByLabelText('Caption (optional)'), 'Rain on glass  ');
-  await userEvent.click(screen.getByRole('button', { name: 'Open camera' }));
   await userEvent.click(await screen.findByRole('button', { name: 'Capture' }));
   await userEvent.click(screen.getByRole('button', { name: 'Save photo' }));
 
   expect(handlers.onMomentCapture).toHaveBeenCalledWith(expect.objectContaining({ id: 'moment-day' }), expect.any(File), 'Rain on glass  ');
-  expect(screen.getByRole('heading', { name: 'Save a piece of today' })).toBeVisible();
+  expect(screen.getByText('Capture today')).toBeVisible();
   expect(document.querySelector('input[type="file"]')).toBeNull();
 });
 

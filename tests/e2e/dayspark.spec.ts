@@ -175,6 +175,16 @@ test('owner journey syncs tasks, goals, gym proof and memories', async ({ page, 
   await page.getByRole('button', { name: /Tasks 1/ }).click();
   await expect(page.getByText('1 private memories')).toBeVisible();
 
+  for (const tab of ['Today', 'Calendar', 'Gym', 'Goals', 'Log']) {
+    await page.getByRole('button', { name: tab, exact: true }).click();
+    await expectNoHorizontalOverflow(page);
+  }
+  await expectFixedControlsStayPut(page);
+  await page.getByRole('button', { name: 'Today', exact: true }).click();
+  await page.getByRole('button', { name: 'Add task' }).click();
+  await expectNoHorizontalOverflow(page);
+  await page.getByRole('button', { name: 'Close New task' }).click();
+
   const secondDevice = await context.newPage();
   await secondDevice.goto('/');
   await expect(secondDevice.locator('html')).toHaveAttribute('data-theme', 'dark');
@@ -182,6 +192,11 @@ test('owner journey syncs tasks, goals, gym proof and memories', async ({ page, 
   await expect(secondDevice.getByRole('button', { name: /Train steadily/ })).toBeVisible();
   await secondDevice.setViewportSize({ width: 1280, height: 900 });
   await expect(secondDevice.getByText('DaySpark')).toBeVisible();
+  for (const tab of ['Today', 'Calendar', 'Gym', 'Goals', 'Log']) {
+    await secondDevice.getByRole('button', { name: tab, exact: true }).click();
+    await expectNoHorizontalOverflow(secondDevice);
+  }
+  await expectFixedControlsStayPut(secondDevice);
 });
 
 test('one flexible rest exhausts the weekly allowance', async ({ page }) => {
@@ -299,4 +314,25 @@ async function expectVisibleTextControlsToUseAtLeast16px(page: import('@playwrig
 
   expect(fontSizes).not.toHaveLength(0);
   expect(fontSizes.every((fontSize) => fontSize >= 16)).toBe(true);
+}
+
+async function expectNoHorizontalOverflow(page: import('@playwright/test').Page) {
+  const widths = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }));
+  expect(widths.scroll).toBe(widths.client);
+}
+
+async function expectFixedControlsStayPut(page: import('@playwright/test').Page) {
+  await page.evaluate(() => scrollTo(0, 0));
+  const nav = page.locator('.bottom-nav');
+  const settings = page.getByRole('button', { name: 'Settings', exact: true });
+  const rect = (locator: ReturnType<typeof page.locator>) => locator.evaluate(element => { const box = element.getBoundingClientRect(); return { y: box.y, height: box.height, position: getComputedStyle(element).position }; });
+  const before = { nav: await rect(nav), settings: await rect(settings) };
+  await page.evaluate(() => scrollTo(0, Math.min(900, document.documentElement.scrollHeight - innerHeight)));
+  const after = { nav: await rect(nav), settings: await rect(settings) };
+  expect(before.nav.position).toBe('fixed');
+  expect(before.settings.position).toBe('fixed');
+  expect(Math.abs(after.nav.y - before.nav.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(after.settings.y - before.settings.y)).toBeLessThanOrEqual(1);
+  expect(after.nav.y + after.nav.height).toBeLessThanOrEqual(page.viewportSize()!.height + 1);
+  await page.evaluate(() => scrollTo(0, 0));
 }

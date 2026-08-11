@@ -26,13 +26,15 @@ export function LogPage({ today = new Date(), completions, activities, proofs, c
 }
 
 function Story({ streak, safe, completions, activities, checkins }: { streak: ReturnType<typeof streakFor>; safe?: Snapshot['globalSafe']; completions: TaskCompletion[]; activities: ActivityEvent[]; checkins: DailyCheckin[] }) {
+  const [activityLimit, setActivityLimit] = useState(8);
+  const [journalLimit, setJournalLimit] = useState(6);
   const points = completions.filter(item => item.status !== 'pending_proof').reduce((sum, item) => sum + item.points, 0);
   const journal = [...checkins].filter(item => item.win || item.gratitude).reverse();
   return <>
     <section className="constellation-card"><div><p className="eyebrow">Momentum constellation</p><h2>{streak.current} day glow</h2><span>Best {streak.best} · {points} sparks earned</span></div><div className="constellation" aria-label="Momentum constellation">{Array.from({ length: 14 }, (_, index) => <i key={index} className={index >= 14 - Math.min(14, streak.current) ? 'lit' : ''} />)}<b>✦</b></div>{streak.comeback && <p className="comeback">Your comeback star is shining again.</p>}</section>
     {safe && <section className="global-safe-card"><span aria-hidden="true">❖</span><div><p className="eyebrow">Streak Safe</p><strong>{safe.stored ? 'Safe ready' : `${safe.qualifyingCount}/7 grown`}</strong><small>{safe.lastProtectedDate ? `Protected ${safe.lastProtectedDate}` : safe.stored ? 'One quiet day is protected' : 'Productive days grow your Safe'}</small></div></section>}
-    {journal.length > 0 && <section className="garden-journal"><header><div><p className="eyebrow">Private memories</p><h2>Garden journal</h2></div><span aria-hidden="true">◇</span></header><div>{journal.map(item => <article key={item.id}><time dateTime={item.date}>{safeDate(item.date)}</time>{item.win && <p><small>Win</small>{item.win}</p>}{item.gratitude && <p><small>Grateful</small>{item.gratitude}</p>}</article>)}</div></section>}
-    <section className="activity-list"><h2>Recent moments</h2>{activities.length ? activities.slice(0, 20).map(item => <article key={item.id}><span>{activityIcon(item.type)}</span><div><strong>{item.message}</strong><small>{safeDate(item.createdAt)}</small></div></article>) : <p className="quiet-copy">Your first finished task will begin this story.</p>}</section>
+    {journal.length > 0 && <section className="garden-journal"><header><div><p className="eyebrow">Private memories</p><h2>Garden journal</h2></div><span aria-hidden="true">◇</span></header><div>{journal.slice(0, journalLimit).map(item => <article key={item.id}><time dateTime={item.date}>{safeDate(item.date)}</time>{item.win && <p><small>Win</small>{item.win}</p>}{item.gratitude && <p><small>Grateful</small>{item.gratitude}</p>}</article>)}</div>{journal.length > journalLimit && <button className="show-more" type="button" onClick={() => setJournalLimit(limit => limit + 6)}>Show more journal entries</button>}</section>}
+    <section className="activity-list"><h2>Recent moments</h2>{activities.length ? activities.slice(0, activityLimit).map(item => <article key={item.id}><span>{activityIcon(item.type)}</span><div><strong>{item.message}</strong><small>{safeDate(item.createdAt)}</small></div></article>) : <p className="quiet-copy">Your first finished task will begin this story.</p>}{activities.length > activityLimit && <button className="show-more" type="button" onClick={() => setActivityLimit(limit => limit + 8)}>Show more moments</button>}</section>
   </>;
 }
 

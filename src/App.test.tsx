@@ -68,8 +68,8 @@ test('preserves a Daily Moment caption in both capture preflight and proof mutat
   const client = { getSetupStatus: vi.fn().mockResolvedValue({ setupRequired: false }), getSession: vi.fn().mockResolvedValue({ user: snapshot.user, csrfToken: 'csrf' }), sync: vi.fn().mockResolvedValue(snapshot), setCsrf: vi.fn(), mutate: vi.fn().mockResolvedValue(undefined), uploadProof: vi.fn(), setup: vi.fn(), login: vi.fn(), logout: vi.fn(), exportUrl: '/api/export' };
   render(<AppProvider client={client}><App /></AppProvider>);
 
-  await userEvent.type(await screen.findByLabelText('Caption (optional)'), 'Rain on glass  ');
-  await userEvent.click(screen.getByRole('button', { name: 'Open camera' }));
+  await userEvent.click(await screen.findByRole('button', { name: 'Capture daily photo' }));
+  await userEvent.type(screen.getByLabelText('Caption (optional)'), 'Rain on glass  ');
   await userEvent.click(await screen.findByRole('button', { name: 'Capture' }));
   await userEvent.click(screen.getByRole('button', { name: 'Save photo' }));
 

@@ -22,6 +22,24 @@ test('turns consistency into a forgiving streak constellation', () => {
   expect(screen.getByLabelText('Momentum constellation')).toBeVisible();
 });
 
+test('reveals recent moments in small batches instead of an endless feed', async () => {
+  const activities = Array.from({ length: 12 }, (_, index) => ({
+    id: `activity-${index}`,
+    type: 'task_completed',
+    message: `Finished task ${index + 1}`,
+    relatedType: 'task',
+    relatedId: `task-${index}`,
+    createdAt: `2026-08-${String(11 - index).padStart(2, '0')}T10:00:00Z`,
+  }));
+  render(<LogPage {...data} activities={activities} today={new Date('2026-08-11T12:00:00')} onDeleteProof={vi.fn()} onSaveReflection={vi.fn()} />);
+
+  expect(screen.getByText('Finished task 8')).toBeVisible();
+  expect(screen.queryByText('Finished task 9')).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: 'Show more moments' }));
+  expect(screen.getByText('Finished task 12')).toBeVisible();
+  expect(screen.queryByRole('button', { name: 'Show more moments' })).not.toBeInTheDocument();
+});
+
 test('keeps old proof viewable and saves a weekly reset', async () => {
   const onDeleteProof = vi.fn();
   const onSaveReflection = vi.fn();

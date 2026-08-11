@@ -76,12 +76,13 @@ export function DailyMomentPrompt({ value, onCapture, onSkip }: { value?: DailyM
   if (!value?.settings.enabled || !day || !['scheduled', 'sent'].includes(day.status)) return null;
   const reminder = value.eligiblePrompt && dismissedDate !== day.localDate;
 
-  return <aside className="daily-moment moment-prompt">
-    <div><p className="eyebrow">Daily Moment</p><h2>{reminder ? 'A tiny piece of today?' : 'Save a piece of today'}</h2><p>{reminder ? 'Your gentle reminder is here. Capture anything ordinary.' : 'Take one whenever the moment feels right.'}</p></div>
-    <label><span>Caption (optional)</span><input maxLength={240} value={caption} onChange={event => setCaption(event.target.value)} /></label>
+  return <aside className={`daily-moment moment-prompt ${reminder ? 'is-reminder' : ''}`}>
+    <span className="moment-seed" aria-hidden="true">◇</span>
+    <div className="moment-copy"><p className="eyebrow">Daily photo</p><strong>{reminder ? 'A tiny piece of today?' : 'Capture today'}</strong><small>{reminder ? 'Your gentle reminder is here.' : 'Whenever it feels right.'}</small></div>
+    <button className="moment-capture" type="button" aria-label="Capture daily photo" onClick={() => setCamera(true)}>Capture</button>
+    {reminder && <button className="moment-dismiss" type="button" aria-label="Not today" title="Not today" disabled={busy} onClick={async () => { setBusy(true); setError(null); try { await onSkip(day.localDate); setDismissedDate(day.localDate); } catch (caught) { setError(caught instanceof Error ? caught.message : 'Daily Moment could not be skipped.'); } finally { setBusy(false); } }}>×</button>}
     {error && <p className="form-error" role="alert">{error}</p>}
-    <div className="moment-actions"><button className="primary-button" type="button" onClick={() => setCamera(true)}>Open camera</button>{reminder && <button className="text-button" type="button" disabled={busy} onClick={async () => { setBusy(true); setError(null); try { await onSkip(day.localDate); setDismissedDate(day.localDate); } catch (caught) { setError(caught instanceof Error ? caught.message : 'Daily Moment could not be skipped.'); } finally { setBusy(false); } }}>Not today</button>}</div>
-    <Sheet open={camera} title="Capture Daily Moment" onClose={() => setCamera(false)}><CameraCapture busy={busy} onSave={async file => { setBusy(true); setError(null); try { await onCapture(day, file, caption); setCamera(false); setCaption(''); if (reminder) setDismissedDate(day.localDate); } catch (caught) { setError(caught instanceof Error ? caught.message : 'Daily Moment could not be saved.'); throw caught; } finally { setBusy(false); } }} /></Sheet>
+    <Sheet open={camera} title="Capture Daily Moment" onClose={() => setCamera(false)}><label className="moment-camera-caption"><span>Caption (optional)</span><input maxLength={240} value={caption} onChange={event => setCaption(event.target.value)} placeholder="A few words for later" /></label><CameraCapture busy={busy} onSave={async file => { setBusy(true); setError(null); try { await onCapture(day, file, caption); setCamera(false); setCaption(''); if (reminder) setDismissedDate(day.localDate); } catch (caught) { setError(caught instanceof Error ? caught.message : 'Daily Moment could not be saved.'); throw caught; } finally { setBusy(false); } }} /></Sheet>
   </aside>;
 }
 
