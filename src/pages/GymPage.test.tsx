@@ -25,19 +25,19 @@ test('saves the current position as a synced workout place', async () => {
   await waitFor(() => expect(onSaveContext).toHaveBeenCalledWith(expect.objectContaining({ contextualAmbience: false, gymPlaces: [expect.objectContaining({ id: expect.any(String), name: 'Morning gym', latitude: 12.9716, longitude: 77.5946, radiusMeters: 500 })] })));
 });
 
-test('keeps weather ambience optional and removes only the chosen workout place', async () => {
+test('keeps global weather settings out of Gym and removes only the chosen workout place', async () => {
   const onSaveContext = vi.fn().mockResolvedValue(undefined);
   const located = withPlan({});
+  located.user.contextualAmbience = true;
   located.user.gymPlaces = [
     { id: '11111111-1111-4111-8111-111111111111', name: 'Morning gym', latitude: 12.9, longitude: 77.5, radiusMeters: 250 },
     { id: '22222222-2222-4222-8222-222222222222', name: 'Evening studio', latitude: 12.8, longitude: 77.6, radiusMeters: 300 },
   ];
   render(<GymPage snapshot={located} mutate={vi.fn()} onSaveContext={onSaveContext} today={new Date('2026-08-10T10:00:00+05:30')} />);
 
-  await userEvent.click(screen.getByLabelText('Use local weather ambience'));
-  expect(onSaveContext).toHaveBeenLastCalledWith(expect.objectContaining({ contextualAmbience: true, gymPlaces: located.user.gymPlaces }));
+  expect(screen.queryByLabelText('Use local weather ambience')).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole('button', { name: 'Remove Morning gym' }));
-  expect(onSaveContext).toHaveBeenLastCalledWith(expect.objectContaining({ gymPlaces: [expect.objectContaining({ name: 'Evening studio' })] }));
+  expect(onSaveContext).toHaveBeenLastCalledWith(expect.objectContaining({ contextualAmbience: true, gymPlaces: [expect.objectContaining({ name: 'Evening studio' })] }));
 });
 
 test('explains a denied workout-place permission without losing the form', async () => {

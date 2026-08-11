@@ -564,11 +564,6 @@ h1 { margin: 0; max-width: 12ch; font-family: Georgia, "Times New Roman", serif;
 .gym-place-form input, .gym-place-form select { min-width: 0; padding: 0 11px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); }
 .gym-place-form button { grid-column: 1/-1; min-height: 46px; border: 0; border-radius: 14px; background: var(--ink); color: white; font-size: .72rem; font-weight: 850; cursor: pointer; }
 .gym-place-form button:disabled { opacity: .55; }
-.gym-weather-toggle { display: flex; min-height: 56px; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
-.gym-weather-toggle strong, .gym-weather-toggle small { display: block; }
-.gym-weather-toggle strong { font-size: .72rem; }
-.gym-weather-toggle small { margin-top: 2px; color: var(--muted); font-size: .6rem; line-height: 1.35; }
-.gym-weather-toggle input { flex: 0 0 auto; width: 22px; min-height: 22px; accent-color: var(--moss); }
 .gym-places .form-error { margin-top: 10px; }
 .gym-routine-editor { display: grid; gap: 16px; padding-top: 18px; }
 .routine-templates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }

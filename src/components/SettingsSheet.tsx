@@ -9,13 +9,13 @@ const areas: Array<{ id: LifeArea; label: string }> = [
 
 export type SettingsValue = {
   enabledAreas: LifeArea[]; displayName: string; appearance: Appearance; gardenSeason: GardenSeason;
-  voice: Voice; focusWindow: FocusWindow; celebration: Celebration;
+  voice: Voice; focusWindow: FocusWindow; celebration: Celebration; contextualAmbience: boolean;
 };
 
 export function SettingsSheet({ open, user, dailyMoment, onClose, onSave, onSaveDailyMoment, onLogout, onInstall }: {
   open: boolean; user: User; dailyMoment?: DailyMomentSettings; onClose(): void; onSave(value: SettingsValue): Promise<void>; onSaveDailyMoment?(value: DailyMomentSettings): Promise<void>; onLogout(): Promise<void>; onInstall?(): void;
 }) {
-  const [value, setValue] = useState<SettingsValue>({ enabledAreas: user.enabledAreas, displayName: user.displayName, appearance: user.appearance, gardenSeason: user.gardenSeason, voice: user.voice, focusWindow: user.focusWindow, celebration: user.celebration });
+  const [value, setValue] = useState<SettingsValue>({ enabledAreas: user.enabledAreas, displayName: user.displayName, appearance: user.appearance, gardenSeason: user.gardenSeason, voice: user.voice, focusWindow: user.focusWindow, celebration: user.celebration, contextualAmbience: user.contextualAmbience ?? false });
   if (!open) return null;
   const set = <K extends keyof SettingsValue>(key: K, next: SettingsValue[K]) => setValue(current => ({ ...current, [key]: next }));
   const toggle = (area: LifeArea) => set('enabledAreas', value.enabledAreas.includes(area) ? value.enabledAreas.filter(item => item !== area) : [...value.enabledAreas, area]);
@@ -32,6 +32,7 @@ export function SettingsSheet({ open, user, dailyMoment, onClose, onSave, onSave
         <fieldset><legend>Celebrations</legend><label><input type="radio" name="celebration" checked={value.celebration === 'quiet'} onChange={() => set('celebration', 'quiet')} />Quiet celebrations</label><label><input type="radio" name="celebration" checked={value.celebration === 'full'} onChange={() => set('celebration', 'full')} />Full celebrations</label></fieldset>
       </div></details>
       <fieldset className="area-choices"><legend>Life areas</legend>{areas.map(area => <label key={area.id}><input type="checkbox" checked={value.enabledAreas.includes(area.id)} onChange={() => toggle(area.id)} />{area.label}</label>)}</fieldset>
+      <div className="settings-row daily-moment-row"><span>Location & weather<small>Optional · local ambience and nearby workout prompts</small></span><label className="moment-switch"><input aria-label="Use local weather ambience" type="checkbox" checked={value.contextualAmbience} onChange={event => set('contextualAmbience', event.target.checked)} /><span aria-hidden="true" /></label></div>
       {dailyMoment && onSaveDailyMoment && <DailyMomentSetup value={dailyMoment} onSave={onSaveDailyMoment} />}
       <div className="settings-row"><span>Timezone</span><strong>{user.timezone}</strong></div>
       <a className="settings-row" href="/api/export" download><span>Download backup</span><strong>JSON ↓</strong></a>

@@ -66,13 +66,23 @@ test('disabling Daily Moment also keeps Task 3 open-app-only', async () => {
   expect(onSaveDailyMoment).toHaveBeenCalledWith({ enabled: false, windowStart: '12:00', windowEnd: '17:00', notifications: false });
 });
 
-function renderSettings(onSaveDailyMoment: (value: DailyMomentSettings) => Promise<void>, dailyMoment = disabledMoment) {
+test('keeps the global location and weather preference in Settings', async () => {
+  const onSave = vi.fn().mockResolvedValue(undefined);
+  renderSettings(vi.fn(), disabledMoment, onSave);
+
+  await userEvent.click(screen.getByRole('checkbox', { name: 'Use local weather ambience' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+  expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ contextualAmbience: true }));
+});
+
+function renderSettings(onSaveDailyMoment: (value: DailyMomentSettings) => Promise<void>, dailyMoment = disabledMoment, onSave = vi.fn()) {
   return render(<SettingsSheet
     open
     user={user}
     dailyMoment={dailyMoment}
     onClose={vi.fn()}
-    onSave={vi.fn()}
+    onSave={onSave}
     onSaveDailyMoment={onSaveDailyMoment}
     onLogout={vi.fn()}
   />);
