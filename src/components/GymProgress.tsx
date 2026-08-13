@@ -1,3 +1,4 @@
+import { format, parseISO } from 'date-fns';
 import { useEffect, useRef, useState } from 'react';
 import { gymPersonalRecords } from '../domain/gym';
 import type { Goal, GymGoalType, ProgressEntry, ProofPhoto } from '../domain/types';
@@ -80,12 +81,12 @@ export function GymProgress({ goals, entries, proofs, weightUnit, protectedGoalI
     {workouts.length > 0 && <div className="gym-workout-history"><h3>Recent workouts</h3>{workouts.map(entry => {
       const routineName = String(entry.details.routineName || 'Open');
       const proof = proofs.find(item => item.ownerType === 'progress' && item.ownerId === entry.id);
-      return <article key={entry.id}><div><strong>{routineName} workout</strong><small>{entry.durationMinutes ? `${entry.durationMinutes} minutes` : 'Completed workout'}</small></div>{proof && <button type="button" aria-label={`Open proof from ${routineName} workout`} onClick={() => setSelectedProof({ proof, title: 'Workout proof', alt: 'Workout proof' })}><img src={proof.imageUrl} alt="" /></button>}<button className="text-button danger" type="button" aria-label={`Delete ${routineName} workout`} onClick={() => { if (window.confirm('Delete this workout and its proof?')) void onDeleteWorkout(entry); }}>Delete</button></article>;
+      return <article key={entry.id}><div><strong>{routineName} workout</strong><small>{entryDate(entry)}{entry.durationMinutes ? ` · ${entry.durationMinutes} min` : ''}{setSummary(entry)}</small></div>{proof && <button type="button" aria-label={`Open proof from ${routineName} workout`} onClick={() => setSelectedProof({ proof, title: 'Workout proof', alt: 'Workout proof' })}><img src={proof.imageUrl} alt="" /></button>}<button className="text-button danger" type="button" aria-label={`Delete ${routineName} workout`} onClick={() => { if (window.confirm('Delete this workout and its proof?')) void onDeleteWorkout(entry); }}>Delete</button></article>;
     })}</div>}
     {physiqueCheckins.length > 0 && <div className="gym-physique-history"><h3>Physique check-ins</h3>{physiqueCheckins.map(entry => {
       const angles = Array.isArray(entry.details.photoAngles) ? entry.details.photoAngles.filter(isPhysiqueAngle) : [];
       const savedProofs = proofs.filter(proof => proof.ownerType === 'progress' && proof.ownerId === entry.id).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-      return <article key={entry.id}><div><strong>Physique check-in</strong><small>{savedProofs.length} private view{savedProofs.length === 1 ? '' : 's'}</small></div><div className="gym-physique-photos">{savedProofs.map((proof, index) => {
+      return <article key={entry.id}><div><strong>{entryDate(entry)}</strong><small>{savedProofs.length} private view{savedProofs.length === 1 ? '' : 's'}</small></div><div className="gym-physique-photos">{savedProofs.map((proof, index) => {
         const angle = angles[index];
         const view = angle ? `${angle} view` : `view ${index + 1}`;
         const alt = angle ? `${titleCase(angle)} physique check-in` : `Physique check-in view ${index + 1}`;
@@ -216,6 +217,15 @@ function optionalNumbers(data: FormData, names: string[]) {
 }
 
 function titleCase(value: string) { return value[0]?.toUpperCase() + value.slice(1); }
+
+function entryDate(entry: ProgressEntry) {
+  return format(parseISO(entry.occurrenceAt), 'EEE d MMM');
+}
+
+function setSummary(entry: ProgressEntry) {
+  const sets = Array.isArray(entry.details.sets) ? entry.details.sets.filter(set => !set.warmup) : [];
+  return sets.length ? ` · ${sets.length} working set${sets.length === 1 ? '' : 's'}` : '';
+}
 
 function isPhysiqueAngle(value: unknown): value is PhysiqueAngle { return value === 'front' || value === 'side' || value === 'back'; }
 

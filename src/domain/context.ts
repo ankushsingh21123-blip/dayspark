@@ -17,8 +17,19 @@ export function nearestGym(places: GymPlace[], current: Coordinates) {
   return nearby?.place ?? null;
 }
 
+const SUNRISE = 5 * 60;
+const SUNSET = 20 * 60;
+
 export function dayPhase(hour: number): DayPhase {
-  return hour < 7 ? 'dawn' : hour < 18 ? 'day' : hour < 21 ? 'dusk' : 'night';
+  return hour < 5 || hour >= 20 ? 'night' : hour < 8 ? 'dawn' : hour < 17 ? 'day' : 'dusk';
+}
+
+/** 0 → 1 across the current arc: sunrise to sunset by day, sunset to sunrise by night. */
+export function skyProgress(date: Date): number {
+  const minutes = date.getHours() * 60 + date.getMinutes();
+  if (minutes >= SUNRISE && minutes < SUNSET) return (minutes - SUNRISE) / (SUNSET - SUNRISE);
+  const since = minutes >= SUNSET ? minutes - SUNSET : minutes + 24 * 60 - SUNSET;
+  return since / (24 * 60 - SUNSET + SUNRISE);
 }
 
 export function weatherKind(code: number): WeatherKind {

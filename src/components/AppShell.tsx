@@ -13,7 +13,7 @@ type Props = {
 export function AppShell({ active, onNavigate, children, context, onOpenSettings }: Props) {
   return (
     <div className="app-shell" data-section={active}>
-      <AmbientGarden section={active} />
+      <AmbientGarden />
       <aside className="brand-rail" aria-label="DaySpark">
         <div className="brand-mark" aria-hidden="true">✦</div>
         <span className="brand-name">DaySpark</span>

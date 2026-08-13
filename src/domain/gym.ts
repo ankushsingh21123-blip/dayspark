@@ -89,6 +89,29 @@ export function gymStreak(input: GymRuleInput): GymStreakResult {
   };
 }
 
+export type GymWeekSummary = { states: GymDayState[]; done: number; planned: number; rest: number; target: number; volume: number };
+
+/** The week a tracker actually needs: sessions done against the plan, rest taken, and load moved. */
+export function gymWeekSummary(input: GymRuleInput, weekDates: string[]): GymWeekSummary {
+  const states = weekDates.map(date => gymDayState({ ...input, today: date }));
+  const plan = activeGymPlan(input.plans, input.today);
+  const inWeek = new Set(weekDates.map(toDateKey));
+  const volume = input.entries.reduce((total, entry) => {
+    if (entry.status !== 'complete' || entry.entryType !== 'workout' || !Array.isArray(entry.details.sets)) return total;
+    if (!inWeek.has(toDateKey(entry.occurrenceAt))) return total;
+    return total + (entry.details.sets as WorkoutSet[]).reduce((load, set) => set.warmup ? load : load + set.load * set.reps, 0);
+  }, 0);
+
+  return {
+    states,
+    done: states.filter(state => state.kind === 'complete').length,
+    planned: states.filter(state => state.kind === 'training' || state.kind === 'complete' && state.scheduled).length,
+    rest: states.filter(state => state.kind === 'rest').length,
+    target: plan?.weeklySessionTarget ?? plan?.trainingWeekdays.length ?? 0,
+    volume: Math.round(volume),
+  };
+}
+
 export function gymPersonalRecords(entries: ProgressEntry[]): Record<string, { load: number; reps: number; entryId: string }> {
   const records: Record<string, { load: number; reps: number; entryId: string }> = {};
   for (const entry of entries) {

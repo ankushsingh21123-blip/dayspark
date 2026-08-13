@@ -30,7 +30,7 @@ export function DailyRituals({ today, scheduled, completions, checkin, preferenc
   const completed = scheduled.filter(task => completions.some(item => item.taskId === task.id && item.occurrenceDate === dateKey(today) && item.status !== 'pending_proof')).length;
   const canLighten = candidates.length > 0 && (checkin?.energy === 'low' || scheduled.length >= 6);
   const canClose = today.getHours() >= 18 || (scheduled.length > 0 && completed === scheduled.length);
-  const rhythm = preferences.focusWindow === 'learn' ? learnedFocusWindow(completions, today) : null;
+  const rhythm = preferences.focusWindow === 'learn' ? learnedFocusWindow(completions, today) : preferences.focusWindow;
   const seedIsTask = !!checkin?.intention && (seedAdded || scheduled.some(task => task.title.trim().toLowerCase() === checkin.intention.trim().toLowerCase()));
   const chooseEnergy = (next: Energy) => { setEnergy(next); if (checkin?.intention) void onCheckin(next); };
 

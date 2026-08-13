@@ -40,7 +40,8 @@ test('the complete interface shares time-aware 3D materials and restrained weath
   for (const phase of ['dawn', 'day', 'dusk', 'night']) expect(styles).toContain(`:root[data-dayphase="${phase}"]`);
   for (const token of ['--phase-surface', '--phase-edge', '--phase-shadow', '--phase-spark']) expect(styles).toContain(token);
   expect(styles).toMatch(/\.ambient-garden[^{]*\{[^}]*perspective:/);
-  expect(styles).toMatch(/\.ambient-orb[^{]*\{[^}]*transform-style:\s*preserve-3d;/);
+  expect(styles).toMatch(/\.ambient-sky[^{]*\{[^}]*transform-style:\s*preserve-3d;/);
+  expect(styles).toMatch(/\.ambient-sky[^{]*\{[^}]*translate3d\(/);
   expect(styles).toMatch(/:root\[data-weather="rain"\][^{]*\.weather-rain/);
   expect(styles).toMatch(/:root\[data-weather="cloud"\][^{]*\.weather-cloud/);
   expect(styles).toMatch(/:root\[data-weather="snow"\][^{]*\.weather-snow/);

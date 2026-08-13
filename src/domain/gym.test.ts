@@ -1,4 +1,4 @@
-import { activeGymPlan, gymDayState, gymPersonalRecords, gymStreak, nextSafeState } from './gym';
+import { activeGymPlan, gymDayState, gymPersonalRecords, gymStreak, gymWeekSummary, nextSafeState } from './gym';
 import type { GymRuleInput } from './gym';
 import type { GymPlan, ProgressEntry, WorkoutSet } from './types';
 
@@ -38,6 +38,17 @@ test('the seventh workout earns a Safe and consuming one keeps paused progress',
     .toMatchObject({ stored: 1, qualifyingCount: 0 });
   expect(nextSafeState({ scope: 'gym', stored: 1, qualifyingCount: 6, lastProtectedDate: null }, { missedDate: '2026-08-07' }))
     .toMatchObject({ stored: 0, qualifyingCount: 6, lastProtectedDate: '2026-08-07' });
+});
+
+test('the week summary counts sessions against the plan and only working-set volume', () => {
+  const week = ['2026-08-03', '2026-08-04', '2026-08-05', '2026-08-06', '2026-08-07', '2026-08-08', '2026-08-09'];
+  const summary = gymWeekSummary(input({
+    fixedRestWeekdays: [6],
+    completed: ['2026-08-04'],
+    entries: [workout([{ exercise: 'Bench press', warmup: true, reps: 5, load: 100, rpe: null }, { exercise: 'Bench press', warmup: false, reps: 8, load: 60, rpe: null }])],
+    today: '2026-08-08',
+  }), week);
+  expect(summary).toMatchObject({ done: 1, rest: 1, target: 7, volume: 480 });
 });
 
 function input(overrides: Record<string, unknown> = {}): GymRuleInput {

@@ -10,8 +10,9 @@ import { TaskCard } from '../components/TaskCard';
 import { TaskEditor, type TaskDraft } from '../components/TaskEditor';
 import { Toast } from '../components/Toast';
 import { dailyProgress, streakFor } from '../domain/progress';
-import { gardenLine, gardenStage } from '../domain/garden';
+import { gardenLine, gardenStage, learnedFocusWindow } from '../domain/garden';
 import { dateKey, occursOn } from '../domain/schedule';
+import { dayPhase } from '../domain/context';
 import { rankNextActions } from '../domain/suggestions';
 import type { DailyCheckin, DailyMomentDay, DailyMomentSnapshot, Energy, Goal, Task, TaskCompletion, User } from '../domain/types';
 import type { SyncState } from '../state/AppProvider';
@@ -38,17 +39,17 @@ export function TodayPage({ today = new Date(), tasks, completions, goals, check
   const completionFor = (task: Task) => completions.find(item => item.taskId === task.id && item.occurrenceDate === key);
   const incomplete = scheduled.filter(task => !completionFor(task));
   const quickWins = incomplete.filter(task => task.estimatedMinutes <= 10);
-  const suggestion = rankNextActions(incomplete, { minutes: 30, energy: checkin?.energy ?? 'medium', now: today })[0];
+  const focusWindow = preferences.focusWindow === 'learn' ? learnedFocusWindow(completions, today) : preferences.focusWindow;
+  const suggestion = rankNextActions(incomplete, { minutes: 30, energy: checkin?.energy ?? 'medium', now: today, focusWindow })[0];
   const statusText = syncState === 'offline' ? `${pendingCount} waiting to sync` : syncState === 'syncing' ? 'Syncing' : 'Synced';
   const finish = async (task: Task) => { if (task.proofRequired) setProofTask(task); else { await onComplete(task, key); setToast(`Completed ${task.title}`); } };
 
-  return <section className="today-page"><header className="today-header"><div><p className="eyebrow">{format(today, 'EEEE · d MMMM')}</p><h1>{preferences.displayName ? `Hi, ${preferences.displayName}` : 'Today'}</h1><span className={`sync-pill ${syncState}`}>{statusText}</span></div><LivingGarden done={progress.completed} total={progress.total} streak={streak.current} season={preferences.gardenSeason} celebration={preferences.celebration} /></header>
-    <p className="luma-line"><span aria-hidden="true">✦</span>{gardenLine(stage, preferences.voice, key)}</p>
+  return <section className="today-page"><header className="today-header"><div><p className="eyebrow">{format(today, 'EEEE · d MMMM')}</p><h1>{preferences.displayName ? `Hi, ${preferences.displayName}` : 'Today'}</h1><span className={`sync-pill ${syncState}`}>{statusText}</span><p className="luma-line"><span aria-hidden="true">✦</span>{gardenLine(stage, preferences.voice, key)}</p></div><LivingGarden done={progress.completed} total={progress.total} streak={streak.current} season={preferences.gardenSeason} celebration={preferences.celebration} /></header>
     <DailyRituals today={today} scheduled={scheduled} completions={completions} checkin={checkin} preferences={preferences} onCheckin={onCheckin} onSaveMorning={async value => { await onSaveMorning(value); setToast('Morning seed planted'); }} onCreateTasks={async items => { await onCreateTasks(items); setToast(`${items.length} task${items.length === 1 ? '' : 's'} planted`); }} onMoveTasks={async (items, date) => { await onMoveTasks(items, date); setToast('Tomorrow feels lighter'); }} onSaveEvening={async value => { await onSaveEvening(value); setToast('Evening lantern saved'); }} />
     {suggestion && <aside className="next-action"><div><p className="eyebrow">Next best action</p><strong>{suggestion.task.title}</strong><small>{suggestion.reason}</small></div><button onClick={() => setFocusTask(suggestion.task)}>Start</button></aside>}
     <DailyMomentPrompt value={dailyMoment} onCapture={onMomentCapture} onSkip={onMomentSkip} />
     {quickWins.length > 0 && <p className="quick-win-label">{quickWins.length} quick win{quickWins.length > 1 ? 's' : ''}</p>}
-    <div className="task-list">{scheduled.length ? scheduled.map(task => <TaskCard key={task.id} task={task} completion={completionFor(task)} onComplete={() => finish(task)} onReopen={async () => { await onReopen(task, key); setToast(`Reopened ${task.title}`); }} onFocus={() => setFocusTask(task)} />) : <div className="calm-empty"><span>☀</span><h2>Your day is open.</h2><p>Add one thing worth doing.</p></div>}</div>
+    <div className="task-list">{scheduled.length ? scheduled.map(task => <TaskCard key={task.id} task={task} completion={completionFor(task)} onComplete={() => finish(task)} onReopen={async () => { await onReopen(task, key); setToast(`Reopened ${task.title}`); }} onFocus={() => setFocusTask(task)} />) : <div className="calm-empty"><span>{dayPhase(today.getHours()) === 'night' ? '☾' : '☀'}</span><h2>Your day is open.</h2><p>Add one thing worth doing.</p></div>}</div>
     <button className="floating-add" onClick={() => setAdding(true)} aria-label="Add task">＋</button>
     <Sheet open={adding} title="New task" onClose={() => setAdding(false)}><TaskEditor date={key} goals={goals} onCancel={() => setAdding(false)} onSave={async value => { await onCreateTask(value); setAdding(false); setToast('Task added'); }} /></Sheet>
     <Sheet open={!!proofTask} title="Add proof" onClose={() => setProofTask(null)}>{proofTask && <CameraCapture busy={photoBusy} onSave={async file => { setPhotoBusy(true); try { await onComplete(proofTask, key, file); setToast(`Proof saved for ${proofTask.title}`); setProofTask(null); } finally { setPhotoBusy(false); } }} />}</Sheet>

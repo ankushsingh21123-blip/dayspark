@@ -4,11 +4,11 @@ import { GymRoutineEditor, type GymRoutineDraft } from '../components/GymRoutine
 import { GymProgress, type GymGoalDraft, type GymProgressDraft, type GymProgressProof } from '../components/GymProgress';
 import { GymSetup, type GymSetupDraft } from '../components/GymSetup';
 import { GymPlaces, type GymContextValue } from '../components/GymPlaces';
-import { ACTIVE_WORKOUT_KEY, activeWorkoutKey, GymWorkout, type GymWorkoutEntry } from '../components/GymWorkout';
+import { ACTIVE_WORKOUT_KEY, GymWorkout, readActiveWorkout, type GymWorkoutEntry } from '../components/GymWorkout';
 import { Sheet } from '../components/Sheet';
 import { prepareProof } from '../data/images';
 import type { QueuedMutation } from '../data/offline';
-import { activeGymPlan, EMPTY_GYM_SNAPSHOT, gymDayState, gymStreak } from '../domain/gym';
+import { activeGymPlan, EMPTY_GYM_SNAPSHOT, gymDayState, gymStreak, gymWeekSummary } from '../domain/gym';
 import { dateKey } from '../domain/schedule';
 import type { Goal, GymDayState, GymRoutine, Snapshot } from '../domain/types';
 
@@ -31,9 +31,11 @@ export function GymPage({ snapshot, mutate, addProof, userId, today = new Date()
   const todayKey = dateKey(today);
   const safeSettlementKey = `${safeSettlementKeyPrefix}:${snapshot.user.id}`;
   const week = Array.from({ length: 7 }, (_, index) => addDays(startOfWeek(today, { weekStartsOn: 1 }), index));
+  const weekKeys = week.map(dateKey);
   const completed = snapshot.progressEntries.filter(entry => entry.entryType === 'workout' && entry.status === 'complete').map(entry => dateKey(parseISO(entry.occurrenceAt)));
   const ruleInput = { plans: gym.plans, restEvents: gym.restEvents, entries: snapshot.progressEntries, safe: gym.safe, completed, today: todayKey };
-  const states = week.map(day => gymDayState({ ...ruleInput, today: dateKey(day) }));
+  const summary = gymWeekSummary(ruleInput, weekKeys);
+  const states = summary.states;
   const todayState = gymDayState(ruleInput);
   const streak = gymStreak(ruleInput);
 
@@ -99,6 +101,7 @@ export function GymPage({ snapshot, mutate, addProof, userId, today = new Date()
     <Sheet open={setupOpen} title="Your gym rhythm" onClose={() => setSetupOpen(false)}><GymSetup onSubmit={saveSetup} onSkip={() => setSetupOpen(false)} /></Sheet>
   </>;
 
+  const weightUnit = gym.plans[gym.plans.length - 1].weightUnit;
   const startWorkout = (routine: GymRoutine | null = gym.routines[0] ?? null) => {
     onStartWorkout?.(todayState);
     setWorkoutRoutineId(routine?.id ?? null);
@@ -106,17 +109,26 @@ export function GymPage({ snapshot, mutate, addProof, userId, today = new Date()
   };
   if (workoutOpen) {
     const plan = activeGymPlan(gym.plans, todayKey) ?? gym.plans[gym.plans.length - 1];
-    return <GymWorkout key={workoutOwnerId} userId={workoutOwnerId} routine={gym.routines.find(routine => routine.id === workoutRoutineId) ?? null} entries={snapshot.progressEntries} goalId={plan.primaryGoalId} date={todayKey} plannedState={todayState.kind} onSaveEntry={saveWorkoutEntry} onSaveProof={saveWorkoutProof} onClose={() => setWorkoutOpen(false)} />;
+    return <GymWorkout key={workoutOwnerId} userId={workoutOwnerId} routine={gym.routines.find(routine => routine.id === workoutRoutineId) ?? null} entries={snapshot.progressEntries} goalId={plan.primaryGoalId} date={todayKey} plannedState={todayState.kind} weightUnit={weightUnit} onSaveEntry={saveWorkoutEntry} onSaveProof={saveWorkoutProof} onClose={() => setWorkoutOpen(false)} />;
   }
   return <section className="gym-page">
     <header className="gym-header"><div><p className="eyebrow">Your gym</p><h1>Grow stronger</h1></div><div className="gym-momentum"><span>{streak.current}</span><small>momentum</small></div></header>
-    <ul className="gym-week" aria-label="This week">{week.map((day, index) => <li className={`gym-stone ${states[index].kind}${dateKey(day) === todayKey ? ' today' : ''}`} aria-label={`${format(day, 'EEEE')}: ${dayLabel(states[index])}`} key={dateKey(day)}><small>{format(day, 'EEE').slice(0, 1)}</small><strong>{format(day, 'd')}</strong></li>)}</ul>
+    <ul className="gym-week" aria-label="This week">{week.map((day, index) => <li className={`gym-stone ${states[index].kind}${weekKeys[index] === todayKey ? ' today' : ''}`} aria-label={`${format(day, 'EEEE')}: ${dayLabel(states[index])}`} key={weekKeys[index]}><small>{format(day, 'EEEEE')}</small><strong>{format(day, 'd')}</strong><b aria-hidden="true">{stoneMark(states[index])}</b></li>)}</ul>
+    <p className="gym-legend" aria-hidden="true"><span className="complete">✓ done</span><span className="training">● training</span><span className="rest">◡ rest</span><span className="open">· open</span></p>
+    <article className="gym-week-card">
+      <div className="gym-week-ring" style={{ '--ring': summary.target ? Math.min(1, summary.done / summary.target) : 0 } as React.CSSProperties}><strong>{summary.done}</strong><small>of {summary.target || '—'}</small></div>
+      <div>
+        <p className="eyebrow">This week</p>
+        <h2>{summary.target === 0 ? `${summary.done} session${summary.done === 1 ? '' : 's'} logged` : summary.done >= summary.target ? 'Week complete' : `${summary.target - summary.done} session${summary.target - summary.done === 1 ? '' : 's'} to go`}</h2>
+        <ul><li><strong>{summary.rest}</strong><small>rest day{summary.rest === 1 ? '' : 's'}</small></li><li><strong>{summary.volume.toLocaleString()}</strong><small>{weightUnit} lifted</small></li><li><strong>{streak.current}</strong><small>session streak</small></li></ul>
+      </div>
+    </article>
     <article className="gym-today-card">
       <p className="eyebrow">Today · {format(today, 'EEEE')}</p>
       {todayState.kind === 'rest' ? <><h2>Planned rest</h2><p>Rest is part of the work. Let your body catch up.</p>{todayState.canUndoRest && <p>{todayState.remainingFlexibleRest} flexible rest{todayState.remainingFlexibleRest === 1 ? '' : 's'} left</p>}<button className="text-button" type="button" onClick={() => startWorkout()}>Train anyway</button></> : todayState.kind === 'complete' ? <><h2>Workout complete</h2><p>That session is safely in the garden.</p></> : <><h2>{todayState.kind === 'training' ? 'Ready when you are' : 'An open day'}</h2><p>{todayState.kind === 'training' ? 'Your planned session is here.' : 'Move if it would feel good today.'}</p><button className="primary-button" type="button" onClick={() => startWorkout()}>Start workout</button>{todayState.remainingFlexibleRest > 0 && <button className="text-button" type="button" onClick={() => void mutate({ method: 'POST', path: '/gym/rest', body: { date: todayKey, kind: 'flexible' } })}>Make today a rest day</button>}</>}
     </article>
     <div className="gym-status-grid"><article><p className="eyebrow">Momentum</p><strong>{streak.current} session{streak.current === 1 ? '' : 's'}</strong><small>Best {streak.best}</small></article><article><p className="eyebrow">Streak Safe</p><strong>{gym.safe.stored ? 'Safe ready' : `${gym.safe.qualifyingCount}/7 grown`}</strong><small>{gym.safe.stored ? 'One missed session is protected' : 'Qualifying workouts grow your Safe'}</small></article></div>
-    <GymProgress goals={snapshot.goals} entries={snapshot.progressEntries} proofs={snapshot.proofs} weightUnit={gym.plans[gym.plans.length - 1].weightUnit} protectedGoalIds={gym.plans.map(plan => plan.primaryGoalId)} onCreateGoal={createGymGoal} onCreateEntry={saveProgressEntry} onAddProof={addProof ? saveProgressProof : undefined} onDeleteGoal={async goal => { await mutate({ method: 'DELETE', path: `/goals/${goal.id}` }); }} onDeleteWorkout={async entry => { await mutate({ method: 'DELETE', path: `/gym/workouts/${entry.id}` }); }} />
+    <GymProgress goals={snapshot.goals} entries={snapshot.progressEntries} proofs={snapshot.proofs} weightUnit={weightUnit} protectedGoalIds={gym.plans.map(plan => plan.primaryGoalId)} onCreateGoal={createGymGoal} onCreateEntry={saveProgressEntry} onAddProof={addProof ? saveProgressProof : undefined} onDeleteGoal={async goal => { await mutate({ method: 'DELETE', path: `/goals/${goal.id}` }); }} onDeleteWorkout={async entry => { await mutate({ method: 'DELETE', path: `/gym/workouts/${entry.id}` }); }} />
     <section className="gym-routines"><header><div><p className="eyebrow">Reusable training</p><h2>Routines</h2></div><button type="button" onClick={() => { setEditingRoutine(undefined); setRoutineOpen(true); }}>Create routine</button></header>
       {gym.routines.map(routine => <article key={routine.id}><div><strong>{routine.name}</strong><small>{routine.exercises.length} exercises</small></div><button type="button" onClick={() => startWorkout(routine)}>Start {routine.name}</button><button className="text-button" type="button" onClick={() => { setEditingRoutine(routine); setRoutineOpen(true); }}>Edit</button></article>)}
     </section>
@@ -127,6 +139,10 @@ export function GymPage({ snapshot, mutate, addProof, userId, today = new Date()
 
 function dayLabel(state: GymDayState) {
   return state.kind === 'complete' ? 'Workout complete' : state.kind === 'rest' ? 'Planned rest' : state.kind === 'training' ? 'Training day' : 'Open day';
+}
+
+function stoneMark(state: GymDayState) {
+  return state.kind === 'complete' ? '✓' : state.kind === 'rest' ? '◡' : state.kind === 'training' ? '●' : '·';
 }
 
 function readSafeSettlement(key: string) {
@@ -148,11 +164,11 @@ function clearSafeSettlement(key: string, expected?: string) {
 }
 
 function hasActiveWorkout(userId: string) {
-  try { return localStorage.getItem(activeWorkoutKey(userId)) !== null; } catch { return false; }
+  return readActiveWorkout(userId) !== null;
 }
 
 function activeWorkoutRoutineId(userId: string): string | null {
-  try { return JSON.parse(localStorage.getItem(activeWorkoutKey(userId)) ?? 'null')?.draft?.routineId ?? null; } catch { return null; }
+  return readActiveWorkout(userId)?.draft.routineId ?? null;
 }
 
 function discardLegacyActiveWorkout() {

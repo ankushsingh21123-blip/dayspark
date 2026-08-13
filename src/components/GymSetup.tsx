@@ -64,6 +64,6 @@ export function GymSetup({ onSubmit, onSkip }: { onSubmit(draft: GymSetupDraft):
 function WeekdayPicker({ title, prefix, selected, onChange }: { title: string; prefix: string; selected: number[]; onChange(days: number[]): void }) {
   return <fieldset className="gym-weekday-picker"><legend>{title}</legend>{weekdays.map(([name, value]) => <label key={value} title={name}>
     <input type="checkbox" aria-label={`${prefix} ${name}`} checked={selected.includes(value)} onChange={() => onChange(selected.includes(value) ? selected.filter(day => day !== value) : [...selected, value].sort((a, b) => a - b))} />
-    {name.slice(0, 1)}
+    {name.slice(0, 2)}
   </label>)}</fieldset>;
 }

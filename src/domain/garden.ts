@@ -27,16 +27,23 @@ export function lightenCandidates(tasks: Task[], completions: TaskCompletion[], 
   return tasks.filter(task => !task.archived && task.scheduleDate === date && task.recurrence.type === 'one_time' && !task.scheduleTime && task.priority !== 'high' && !completed.has(task.id));
 }
 
-export function learnedFocusWindow(completions: TaskCompletion[], now: Date): 'morning' | 'afternoon' | 'evening' | null {
+const windows = ['morning', 'afternoon', 'evening'] as const;
+export type DayWindow = typeof windows[number];
+
+export function windowOf(date: Date): DayWindow {
+  const hour = date.getHours();
+  return hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+}
+
+export function learnedFocusWindow(completions: TaskCompletion[], now: Date): DayWindow | null {
   const cutoff = now.getTime() - 14 * 24 * 60 * 60 * 1000;
   const recent = completions.filter(item => item.status !== 'pending_proof').map(item => new Date(item.completedAt)).filter(date => Number.isFinite(date.getTime()) && date.getTime() >= cutoff && date <= now);
   if (recent.length < 5) return null;
   const counts = recent.reduce((value, date) => {
-    const hour = date.getHours();
-    value[hour < 12 ? 0 : hour < 17 ? 1 : 2]++;
+    value[windows.indexOf(windowOf(date))]++;
     return value;
   }, [0, 0, 0]);
-  return (['morning', 'afternoon', 'evening'] as const)[counts.indexOf(Math.max(...counts))];
+  return windows[counts.indexOf(Math.max(...counts))];
 }
 
 const lines: Record<GardenVoice, Record<GardenStage, string[]>> = {
