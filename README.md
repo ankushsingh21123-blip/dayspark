@@ -20,19 +20,37 @@ A mobile-first, private PWA for recurring tasks, one-time plans, goals, gym prog
 - Saved workout places, nearby start prompts, and optional time/weather ambience
 - Synced app-wide Streak Safe, Pomodoro presets, guided meditation, and light/dark themes
 
-## Local checks
+## 🛠️ Multi-Language Architecture & Tech Stack
 
-```sh
+- **Frontend Client**: React 18, Vite 6, TypeScript, IndexedDB Offline Sync, Lucide Icons, Mobile-First PWA
+- **Python Backend Service (`backend-python/`)**: Python 3.12, FastAPI, Uvicorn, SQLite Async Persistence, REST API Endpoints (`/api/sync`, `/api/login`, `/api/habits`, `/api/tasks`)
+- **C++ Native Verification Core (`core-cpp/`)**: Modern C++20, CMake, Zero-Copy Perceptual Hashing (pHash), Physical Sensor Coherence Validation, 128-bit Cryptographic Proof Digesting
+- **PHP Legacy Engine (`dayspark-private/` + `public_html/`)**: Hostinger MySQL sync engine for traditional cPanel deployments
+
+## Local Development & Quickstart
+
+### 1. Frontend PWA
+```bash
 npm install
-docker compose up -d db
-npm test -- --run
-npm run test:php
-npm run typecheck
-npm run build
-npm run package:hostinger
+npm run dev
 ```
 
-The generated `release/` folder mirrors the safe Hostinger layout. Copy `public_html/` to the domain root, keep `dayspark-private/` beside it, import `database/schema.sql`, and fill the private `config.php` from its example.
+### 2. Python FastAPI Backend Service
+```bash
+cd backend-python
+pip install -r requirements.txt
+python main.py
+```
+
+### 3. C++20 Verification Core
+```bash
+cd core-cpp
+mkdir build && cd build
+cmake ..
+cmake --build .
+./dayspark_verifier
+```
+
 
 ## Gym upgrade
 
