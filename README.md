@@ -1,6 +1,15 @@
-# DaySpark
+# DaySpark ✦
 
-A mobile-first, private PWA for recurring tasks, one-time plans, goals, gym progress, photo memories, streaks, focus, meditation, and reflection. Data syncs through a PHP/MySQL API and photos are stored outside the public web root.
+**A calm, private Progressive Web App for recurring tasks, fitness progress, focus sprints, and reflection.**
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-dayspark--pwa.netlify.app-00C7B7?style=for-the-badge&logo=netlify)](https://dayspark-pwa.netlify.app)
+[![GitHub](https://img.shields.io/badge/GitHub-ankushsingh21123--blip%2Fdayspark-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/ankushsingh21123-blip/dayspark)
+
+🌐 **Live Application:** [dayspark-pwa.netlify.app](https://dayspark-pwa.netlify.app)
+
+<br/>
+
+A mobile-first, private PWA for recurring tasks, one-time plans, goals, gym progress, photo memories, streaks, focus, meditation, and reflection. Includes offline IndexedDB sync and ambient environment lighting.
 
 ## Highlights
 
